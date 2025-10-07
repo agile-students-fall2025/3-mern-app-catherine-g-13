@@ -6,21 +6,34 @@ const mongoose = require('mongoose')
 
 const app = express() // instantiate an Express object
 app.use(morgan('dev', { skip: (req, res) => process.env.NODE_ENV === 'test' })) // log all incoming requests, except when in unit test mode.  morgan has a few logging default styles - dev is a nice concise color-coded style
+app.use('/images', express.static('public/images'))
 app.use(cors()) // allow cross-origin resource sharing
 
 // use express's builtin body-parser middleware to parse any data included in a request
 app.use(express.json()) // decode JSON-formatted incoming POST data
 app.use(express.urlencoded({ extended: true })) // decode url-encoded incoming POST data
+app.use('/images', express.static('public/images'))
 
 // connect to database
 mongoose
   .connect(`${process.env.DB_CONNECTION_STRING}`)
   .then(data => console.log(`Connected to MongoDB`))
   .catch(err => console.error(`Failed to connect to MongoDB: ${err}`))
+  mongoose.connection.on('connected', async () => {
+    console.log('✅ Mongoose connected successfully.');
+  
+    const dbName = mongoose.connection.db.databaseName;
+    console.log('Connected to database:', dbName);
+  
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    console.log('Collections in this DB:', collections.map(c => c.name));
+  });
+  
 
 // load the dataabase models we want to deal with
 const { Message } = require('./models/Message')
 const { User } = require('./models/User')
+const {About} = require('./models/About')
 
 // a route to handle fetching all messages
 app.get('/messages', async (req, res) => {
@@ -77,6 +90,32 @@ app.post('/messages/save', async (req, res) => {
     })
   }
 })
-
-// export the express app we created to make it available to other modules
+app.get('/api/about', async (req, res) => {
+  try {
+    const about = await About.find({})
+    res.json({ about }) 
+  } catch (err) {
+    console.error('Error fetching about:', err)
+    res.status(500).send('Error fetching about info')
+  }
+})
+/*
+app.get('/api/about', async (req, res) => {
+  try {
+    const about = await About.find({})
+    res.json({
+      about: about,
+      status: 'all good',
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(400).json({
+      error: err,
+      status: 'failed to about message from the database',
+    })
+  }
+})
+*/
 module.exports = app // CommonJS export style!
+
+

@@ -13,3 +13,13 @@
     text-align: left;
     width: 100%;
   }
+
+  .about-image {
+    width: 50%;
+    max-width: 250px;
+    height: 250px;
+    display: block;
+    margin: 1rem auto;
+    object-fit: cover;    
+      }
+     
